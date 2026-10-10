@@ -1,0 +1,13 @@
+node_modules/
+.output/
+.wxt/
+coverage/
+.DS_Store
+*.zip
+*.bundle
+.env
+.env.*
+*.pem
+*.key
+.scratch/
+open-source/
