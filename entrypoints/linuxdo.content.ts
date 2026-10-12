@@ -1,5 +1,11 @@
 import { defaults, VERSION, type Settings } from "../shared/config";
-import type { Batch, Exposure, Read, Candidate } from "../shared/types";
+import type {
+  Batch,
+  Exposure,
+  Read,
+  Candidate,
+  Request,
+} from "../shared/types";
 import {
   rows,
   currentTopic,
@@ -99,7 +105,17 @@ export default defineContentScript({
       document.visibilityState === "visible" &&
       document.hasFocus() &&
       Date.now() - lastActivity < config.model.readIdleMs;
-    const send = sendMessage;
+    // 扩展重新加载后，旧页面里的脚本不再发送消息，避免 Extension context invalidated。
+    const send = (message: Request) =>
+      ctx.isValid
+        ? sendMessage(message)
+        : Promise.reject(new Error("Extension context invalidated"));
+    const post = (message: Request) => {
+      send(message).catch(() => undefined);
+    };
+    const restart = (route = false) => {
+      reset(route).catch(() => undefined);
+    };
     async function flush() {
       if (!Object.values(pending).some((a) => a.length)) return;
       const batch = pending;
@@ -401,7 +417,7 @@ export default defineContentScript({
         trackedUrl = location.href;
         return;
       }
-      void reset(true);
+      restart(true);
     });
     browser.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       if (msg.type === "drain") {
@@ -442,7 +458,7 @@ export default defineContentScript({
         };
         exposures.clear();
         read = null;
-        void reset();
+        restart();
       }
     });
     for (const event of [
@@ -500,7 +516,7 @@ export default defineContentScript({
       if (target) {
         const notificationId = notificationTopic(target);
         if (notificationId) {
-          void send({
+          post({
             type: "notificationEntry",
             topicId: notificationId,
             openMode:
@@ -553,7 +569,7 @@ export default defineContentScript({
       ctx.addEventListener(window, event, () => {
         pause();
         checkpoint(Date.now(), event === "pagehide");
-        void send({
+        post({
           type: "pulse",
           at: Date.now(),
           active: false,
@@ -564,7 +580,7 @@ export default defineContentScript({
     ctx.addEventListener(document, "visibilitychange", () => {
       if (document.hidden) {
         pause();
-        void send({
+        post({
           type: "pulse",
           at: Date.now(),
           active: false,
@@ -579,16 +595,15 @@ export default defineContentScript({
       lastActivity = Date.now();
       lastFrame = Date.now();
     });
-    const timer = setInterval(() => {
+    ctx.setInterval(() => {
       void tick();
     }, 100);
     ctx.onInvalidated(() => {
-      clearInterval(timer);
       mutation.disconnect();
       full.disconnect();
       zone.disconnect();
       panel?.remove();
     });
-    void reset();
+    restart();
   },
 });

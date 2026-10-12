@@ -114,8 +114,20 @@ afterEach(() => {
   vi.restoreAllMocks();
   document.body.innerHTML = "";
 });
+let contextValid = true;
 function start() {
+  contextValid = true;
   main({
+    get isValid() {
+      return contextValid;
+    },
+    setInterval: (fn: () => void, ms: number) => {
+      const id = setInterval(() => {
+        if (contextValid) fn();
+      }, ms);
+      invalidated.push(() => clearInterval(id));
+      return id;
+    },
     addEventListener: (
       target: EventTarget,
       name: string,
@@ -129,6 +141,29 @@ function start() {
   });
 }
 describe("collector lifecycle", () => {
+  it("stops messaging after the extension is reloaded under an open page", async () => {
+    history.replaceState({}, "", "/latest");
+    start();
+    await vi.advanceTimersByTimeAsync(2000);
+    const send = vi.mocked(browser.runtime.sendMessage);
+    send.mockRejectedValue(new Error("Extension context invalidated."));
+    contextValid = false;
+    const calls = send.mock.calls.length;
+    const unhandled = vi.fn();
+    const { process } = globalThis as unknown as {
+      process: {
+        on(event: string, fn: () => void): void;
+        off(event: string, fn: () => void): void;
+      };
+    };
+    process.on("unhandledRejection", unhandled);
+    window.dispatchEvent(new Event("blur"));
+    document.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await vi.advanceTimersByTimeAsync(16000);
+    process.off("unhandledRejection", unhandled);
+    expect(send.mock.calls.length).toBe(calls);
+    expect(unhandled).not.toHaveBeenCalled();
+  });
   it.each(["/u/name", "/notifications", "/my/messages"])("does not track excluded route %s even in Debug Mode", async (path) => {
     config.debug = true;
     history.replaceState({}, "", path);
