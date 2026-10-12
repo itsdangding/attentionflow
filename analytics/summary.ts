@@ -74,7 +74,8 @@ export function summarize(
   ).size;
   const sessions = data.sessions
     .map((s) => ({ ...s, periodMs: duration(s.activeSegments, start, end) }))
-    .filter((s) => s.periodMs > 0);
+    .filter((s) => s.periodMs > 0)
+    .sort((a, b) => a.startedAt - b.startedAt);
   const grouped = Map.groupBy(reads, (r) => r.externalTopicId);
   const top = Array.from(grouped, ([id, rs]) => ({
     id,
@@ -99,6 +100,7 @@ export function summarize(
     top,
     activeMs: sessions.reduce((n, s) => n + s.periodMs, 0),
     exposureCount: exposures.length,
+    clickCount: clicks.length,
   };
 }
 export function sevenDays(now: number) {

@@ -128,6 +128,9 @@ export type Request =
     }
   | { type: "batch"; batch: Batch }
   | { type: "export" }
+  | { type: "range"; start: number; end: number }
+  | { type: "stats" }
+  | { type: "history"; since: number }
   | { type: "import"; data: unknown }
   | { type: "delete" }
   | { type: "clearDebug" };

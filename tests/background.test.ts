@@ -220,6 +220,60 @@ describe("background contracts", () => {
       listener({ type: "settings" }, { url: "https://example.com" }),
     ).rejects.toThrow("Unauthorized");
   });
+  it("topic page updates do not erase list metadata", async () => {
+    const topic = {
+      site: "linuxdo" as const,
+      externalTopicId: 5,
+      title: "T",
+      category: "开发调优",
+      tags: ["AI"],
+      author: "alice",
+      highestPostNumber: 0,
+      firstSeenAt: 1,
+      lastSeenAt: 1,
+    };
+    await listener({ type: "batch", batch: { ...batch(), topics: [topic] } }, site());
+    await listener(
+      {
+        type: "batch",
+        batch: {
+          ...batch(),
+          topics: [
+            { ...topic, category: "", tags: [], author: "", highestPostNumber: 9, firstSeenAt: 2, lastSeenAt: 2 },
+          ],
+        },
+      },
+      site(),
+    );
+    expect(await db.topics.get(["linuxdo", 5])).toMatchObject({
+      category: "开发调优",
+      tags: ["AI"],
+      author: "alice",
+      highestPostNumber: 9,
+      firstSeenAt: 1,
+      lastSeenAt: 2,
+    });
+  });
+  it("serves range queries to the dashboard only and validates bounds", async () => {
+    await expect(
+      listener({ type: "range", start: 0, end: 1 }, site()),
+    ).rejects.toThrow("Dashboard only");
+    await expect(
+      listener({ type: "range", start: 2, end: 1 }, dashboard),
+    ).rejects.toThrow("Invalid range");
+    const data = await listener(
+      { type: "range", start: 0, end: Date.now() },
+      dashboard,
+    );
+    expect(data.exposures).toEqual([]);
+    await expect(
+      listener({ type: "history", since: 0 }, site()),
+    ).rejects.toThrow("Dashboard only");
+    expect(await listener({ type: "history", since: 0 }, dashboard)).toEqual({
+      reads: [],
+      topics: [],
+    });
+  });
   it("deletes every table and clears restored Session state", async () => {
     const payload = batch();
     payload.clicks = [click(24)];

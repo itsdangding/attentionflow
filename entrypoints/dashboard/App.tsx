@@ -5,6 +5,7 @@ import type { Snapshot } from "../../shared/types";
 import { summarize, sevenDays } from "../../analytics/summary";
 import { stages } from "../../core/model";
 import { localDay } from "../../core/time";
+import History from "./History";
 const empty: Snapshot = {
   topics: [],
   exposures: [],
@@ -13,6 +14,10 @@ const empty: Snapshot = {
   sessions: [],
   debugTraces: [],
 };
+interface Stats {
+  counts: Record<string, number>;
+  usage: number | null;
+}
 const time = (ms: number) =>
   ms < 60000
     ? `${Math.floor(ms / 1000)} 秒`
@@ -28,16 +33,21 @@ export default function App() {
     [settings, setSettings] = useState<Settings>(defaults),
     [message, setMessage] = useState(""),
     [ready, setReady] = useState(false),
-    [confirmDelete, setConfirmDelete] = useState(false);
+    [confirmDelete, setConfirmDelete] = useState(false),
+    [stats, setStats] = useState<Stats | null>(null),
+    [version, setVersion] = useState(0);
   const send = sendMessage;
   async function load() {
     try {
+      const week = sevenDays(Date.now());
       const [snapshot, config] = await Promise.all([
-        send({ type: "export" }),
+        send({ type: "range", start: week[0]!.start, end: week[6]!.end }),
         send({ type: "settings" }),
       ]);
       setData(snapshot);
       setSettings(config);
+      setVersion((v) => v + 1);
+      if (page === "settings") setStats(await send({ type: "stats" }));
       setReady(true);
     } catch (e) {
       setMessage(`加载失败：${e instanceof Error ? e.message : String(e)}`);
@@ -49,7 +59,7 @@ export default function App() {
       void load();
     }, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [page]);
   const now = Date.now(),
     days = sevenDays(now),
     start = page === "week" ? days[0]!.start : localDay(now),
@@ -104,6 +114,7 @@ export default function App() {
             [
               ["today", "◉", "Today"],
               ["week", "▥", "Last 7 Days"],
+              ["history", "☰", "History"],
               ["settings", "⚙", "Settings"],
             ] as const
           ).map(([id, icon, label]) => (
@@ -136,7 +147,9 @@ export default function App() {
                 ? "Today"
                 : page === "week"
                   ? "Last 7 Days"
-                  : "Settings"}
+                  : page === "history"
+                    ? "History"
+                    : "Settings"}
             </h1>
             <span>
               {new Date().toLocaleDateString("zh-CN", {
@@ -152,6 +165,8 @@ export default function App() {
           <p>
             {page === "settings"
               ? "所有数据留在本地。采集行为由你控制。"
+              : page === "history"
+                ? "读过的帖子，按最近一次阅读排列。点击回到上次读到的楼层。"
               : "看见、停留、选择与阅读。回顾你的注意力去了哪里。"}
           </p>
         </header>
@@ -165,6 +180,12 @@ export default function App() {
         )}
         {!ready ? (
           <div className="card">正在加载本地数据…</div>
+        ) : page === "history" ? (
+          <History
+            model={settings.model}
+            version={version}
+            onError={setMessage}
+          />
         ) : page === "settings" ? (
           <>
             <section className="card">
@@ -196,6 +217,16 @@ export default function App() {
                 JSON 包含版本、帖子、曝光、点击候选集、阅读、Session
                 与调试记录。导入按主键合并，保留已有记录。
               </p>
+              {stats && (
+                <p>
+                  {stats.usage !== null &&
+                    `本地占用约 ${(stats.usage / 1048576).toFixed(1)} MB · `}
+                  曝光 {stats.counts.exposures ?? 0} · 阅读{" "}
+                  {stats.counts.reads ?? 0} · 点击 {stats.counts.clicks ?? 0} ·
+                  Session {stats.counts.sessions ?? 0} · Debug Trace{" "}
+                  {stats.counts.debugTraces ?? 0}（自动保留 7 天）
+                </p>
+              )}
               <div className="actions">
                 <button onClick={() => void download()}>导出 JSON</button>
                 <label className="file-button">
@@ -475,7 +506,7 @@ export default function App() {
             <footer>
               本地数据 · 无账号 · 无云同步
               <span>
-                {summary.exposureCount} 次原始曝光 · {data.clicks.length}{" "}
+                {summary.exposureCount} 次原始曝光 · {summary.clickCount}{" "}
                 个点击候选集{" "}
                 <button onClick={() => void download()}>导出数据 ↗</button>
               </span>

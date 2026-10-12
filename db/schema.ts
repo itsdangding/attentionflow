@@ -24,6 +24,11 @@ export class AttentionDB extends Dexie {
       sessions: "id,startedAt",
       debugTraces: "id,timestamp",
     });
+    this.version(2).stores({
+      exposures: "id,sessionId,enteredAt,leftAt,[site+externalTopicId]",
+      reads: "id,openedAt,lastCheckpointAt,[site+externalTopicId]",
+      sessions: "id,startedAt,endedAt",
+    });
   }
 }
 export const db = new AttentionDB();

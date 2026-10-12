@@ -40,6 +40,11 @@ export function detect(path: string): {
     };
   return { kind: "excluded", source: "latest" };
 }
+// Discourse 3.2 起分类徽章使用 .badge-category__name，旧版为 .category-name。
+const CATEGORY = ".badge-category__name, .category-name";
+function text(root: ParentNode | null, selector: string) {
+  return root?.querySelector(selector)?.textContent?.trim() ?? "";
+}
 export interface Row {
   element: Element;
   topic: Topic;
@@ -74,9 +79,7 @@ export function rows(path = location.pathname): Row[] {
             site: "linuxdo",
             externalTopicId: id,
             title: link.textContent?.trim() ?? "",
-            category:
-              element.querySelector(".category-name")?.textContent?.trim() ??
-              "",
+            category: text(element, CATEGORY),
             tags: Array.from(element.querySelectorAll(".discourse-tag")).map(
               (t) => t.textContent?.trim() ?? "",
             ),
@@ -101,7 +104,9 @@ export function currentTopic(): Topic | null {
   )
     return null;
   const timeline = document
-    .querySelector(".timeline-handle .timeline-text")
+    .querySelector(
+      ".timeline-replies, .timeline-handle .timeline-text, #topic-progress .nums",
+    )
     ?.textContent?.match(/\d[\d,]*/g);
   const total = totals.get(id) ?? 0;
   const now = Date.now();
@@ -111,10 +116,7 @@ export function currentTopic(): Topic | null {
     title:
       document.querySelector("#topic-title h1")?.textContent?.trim() ??
       document.title,
-    category:
-      document
-        .querySelector("#topic-title .category-name")
-        ?.textContent?.trim() ?? "",
+    category: text(document.querySelector("#topic-title"), CATEGORY),
     tags: Array.from(
       document.querySelectorAll("#topic-title .discourse-tag"),
     ).map((e) => e.textContent?.trim() ?? ""),
@@ -144,13 +146,20 @@ export function visiblePostNumbers(): number[] {
 }
 
 const totals = new Map<number, number>();
-export async function loadTopicTotal(id: number) {
-  if (totals.has(id)) return;
+const attempts = new Map<number, number>();
+export const TOTAL_RETRY_MS = 15000;
+export async function loadTopicTotal(id: number, now = Date.now()) {
+  if (totals.has(id) || now - (attempts.get(id) ?? -Infinity) < TOTAL_RETRY_MS)
+    return;
+  attempts.set(id, now);
   try {
     const response = await fetch(`/t/${id}.json`, {
       credentials: "same-origin",
     });
-    if (!response.ok) return;
+    if (!response.ok) {
+      console.debug("[AttentionFlow] Topic total unavailable", response.status);
+      return;
+    }
     const data = await response.json();
     if (
       Number.isInteger(data.highest_post_number) &&

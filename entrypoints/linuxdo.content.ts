@@ -346,6 +346,8 @@ export default defineContentScript({
           );
           const topic = currentTopic();
           if (topic) {
+            if (!read.highestPostNumber)
+              void loadTopicTotal(topic.externalTopicId, at);
             read.highestPostNumber = Math.max(
               read.highestPostNumber,
               topic.highestPostNumber,
@@ -354,6 +356,9 @@ export default defineContentScript({
         }
         debug(at, candidates());
         if (at - lastFlush >= 15000) {
+          const topic = read && currentTopic();
+          if (topic?.externalTopicId === read?.externalTopicId && topic)
+            pending.topics.push(topic);
           checkpoint(at);
           await flush();
           lastFlush = at;

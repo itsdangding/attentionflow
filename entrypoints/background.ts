@@ -1,6 +1,12 @@
 import { settingsSchema } from "../shared/settings";
 import { db } from "../db/schema";
 import { exportData, importData, schemas } from "../db/transfer";
+import {
+  loadHistory,
+  loadRange,
+  pruneDebugTraces,
+  storageStats,
+} from "../db/query";
 import { defaults, type Settings } from "../shared/config";
 import type { Request, Batch } from "../shared/types";
 import { pulse, type SessionState } from "../core/session";
@@ -39,6 +45,10 @@ export default defineBackground(() => {
           const prev = await db.topics.get([topic.site, topic.externalTopicId]);
           await db.topics.put({
             ...topic,
+            title: topic.title || prev?.title || "",
+            category: topic.category || prev?.category || "",
+            tags: topic.tags.length ? topic.tags : (prev?.tags ?? []),
+            author: topic.author || prev?.author || "",
             firstSeenAt: prev?.firstSeenAt ?? topic.firstSeenAt,
             highestPostNumber: Math.max(
               prev?.highestPostNumber ?? 0,
@@ -116,6 +126,8 @@ export default defineBackground(() => {
     if (msg.type === "batch") {
       if (!fromSite || !config.tracking) return;
       await persist(msg.batch, sender.tab?.id, config.debug);
+      if (config.debug && msg.batch.debugTraces.length)
+        await pruneDebugTraces(db, Date.now());
       return;
     }
     if (msg.type === "notificationEntry") {
@@ -265,6 +277,21 @@ export default defineBackground(() => {
       return;
     }
     if (msg.type === "export") return exportData(db);
+    if (msg.type === "range") {
+      if (
+        !Number.isFinite(msg.start) ||
+        !Number.isFinite(msg.end) ||
+        msg.end < msg.start
+      )
+        throw Error("Invalid range");
+      await pruneDebugTraces(db, Date.now());
+      return loadRange(db, msg.start, msg.end);
+    }
+    if (msg.type === "stats") return storageStats(db);
+    if (msg.type === "history") {
+      if (!Number.isFinite(msg.since)) throw Error("Invalid range");
+      return loadHistory(db, msg.since);
+    }
     if (msg.type === "import") return importData(db, msg.data);
     if (msg.type === "clearDebug") {
       await db.debugTraces.clear();
