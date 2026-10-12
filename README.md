@@ -5,7 +5,7 @@
 **回顾你在 Linux DO 的浏览、停留与阅读，让注意力有迹可循。**
 
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://www.google.com/chrome/)
-[![Version](https://img.shields.io/badge/Version-0.1.1%20Alpha-709266?style=for-the-badge)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.1.2%20Alpha-709266?style=for-the-badge)](./CHANGELOG.md)
 [![LINUX DO](https://img.shields.io/badge/LINUX%20DO-社区交流-E9711C?style=for-the-badge&logo=linux&logoColor=white)](https://linux.do)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](./LICENSE)
 
@@ -17,7 +17,7 @@
 
 AttentionFlow 是一款面向 [LINUX DO 社区](https://linux.do) 的开源 Chrome 扩展。它记录哪些帖子进入过视野，哪些让你停留，哪些被点击，以及你实际花了多久阅读，并在统计面板中呈现你的注意力流。
 
-所有浏览记录保存在当前浏览器中，无需注册账号。当前版本为 **v0.1.1 Alpha**。
+所有浏览记录保存在当前浏览器中，无需注册账号。当前版本为 **v0.1.2 Alpha**。
 
 ## 功能
 
@@ -34,7 +34,7 @@ AttentionFlow 是一款面向 [LINUX DO 社区](https://linux.do) 的开源 Chro
 
 ### 使用已构建的扩展
 
-1. 解压 `attentionflow-0.1.1-chrome.zip`，将文件夹放在固定位置；其中应直接包含 `manifest.json`。
+1. 在 [Releases](https://github.com/wanxiao2018/attentionflow/releases/latest) 的 Assets 中下载 `attentionflow-0.1.2-chrome.zip`（不要下载 Source code，那是未构建的源码，无法直接安装）。解压后将文件夹放在固定位置；其中应直接包含 `manifest.json`。直接把 zip 拖进扩展页面不能安装。
 2. Chrome 地址栏打开 `chrome://extensions`，开启右上角「开发者模式」。
 3. 点击「加载已解压的扩展程序」，选择解压后的文件夹。
 4. 刷新已打开的 Linux DO 页面，开始正常浏览。

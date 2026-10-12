@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 - 2026-10-12
 
 ### 新增
 
@@ -19,6 +19,7 @@
 - Dashboard 只向后台请求最近 7 天内的记录，不再每 15 秒读取全部数据；数据库升级到 v2，新增按结束时间的索引，原有记录自动保留。
 - Debug Trace 自动保留 7 天，原始曝光、点击与阅读记录不受影响。
 - Settings 显示本地占用空间与各类记录数量。
+- Release 附带已构建的 `attentionflow-0.1.2-chrome.zip`，README 说明从 Assets 下载而不是 Source code。
 
 ## 0.1.1 - 2026-10-10
 
