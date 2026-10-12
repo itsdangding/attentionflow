@@ -67,7 +67,7 @@ describe("reading history", () => {
     );
     expect(deep[0]!.deep).toBe(true);
   });
-  it("filters by title, category, tag and short visits", () => {
+  it("filters by title, tag and short visits", () => {
     const entries = historyEntries(
       [read(1, day, 20000), read(2, day, 20000), read(3, day, 2000)],
       [
@@ -77,12 +77,11 @@ describe("reading history", () => {
       ],
       defaults.model,
     );
-    const base = { query: "", category: "", tag: "", includeShort: false };
+    const base = { query: "", tag: "", includeShort: false };
     expect(filterHistory(entries, base).map((e) => e.id).sort()).toEqual([1, 2]);
     expect(filterHistory(entries, { ...base, includeShort: true })).toHaveLength(3);
     expect(filterHistory(entries, { ...base, query: "claude" }).map((e) => e.id)).toEqual([1]);
     expect(filterHistory(entries, { ...base, query: "2" }).map((e) => e.id)).toEqual([2]);
-    expect(filterHistory(entries, { ...base, category: "资源荟萃" }).map((e) => e.id)).toEqual([2]);
     expect(filterHistory(entries, { ...base, tag: "AI" }).map((e) => e.id)).toEqual([1]);
   });
   it("groups entries by local day of the last reading", () => {

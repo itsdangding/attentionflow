@@ -58,7 +58,6 @@ export default function History({
       null,
     ),
     [query, setQuery] = useState(""),
-    [category, setCategory] = useState(""),
     [tag, setTag] = useState(""),
     [includeShort, setIncludeShort] = useState(false);
   useEffect(() => {
@@ -75,17 +74,12 @@ export default function History({
     () => (data ? historyEntries(data.reads, data.topics, model) : []),
     [data, model],
   );
-  const categories = useMemo(
-    () => [...new Set(entries.map((e) => e.category).filter(Boolean))].sort(),
-    [entries],
-  );
   const tags = useMemo(
     () => [...new Set(entries.flatMap((e) => e.tags).filter(Boolean))].sort(),
     [entries],
   );
   const visible = filterHistory(entries, {
     query,
-    category,
     tag,
     includeShort,
   });
@@ -112,16 +106,6 @@ export default function History({
           onChange={(e) => setQuery(e.target.value)}
           aria-label="搜索标题"
         />
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          aria-label="分类"
-        >
-          <option value="">全部分类</option>
-          {categories.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
         <select
           value={tag}
           onChange={(e) => setTag(e.target.value)}

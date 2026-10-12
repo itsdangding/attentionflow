@@ -19,7 +19,6 @@ export interface HistoryEntry {
 }
 export interface HistoryFilter {
   query: string;
-  category: string;
   tag: string;
   includeShort: boolean;
 }
@@ -59,7 +58,6 @@ export function filterHistory(entries: HistoryEntry[], f: HistoryFilter) {
   return entries.filter(
     (e) =>
       (f.includeShort || e.read) &&
-      (!f.category || e.category === f.category) &&
       (!f.tag || e.tags.includes(f.tag)) &&
       (!query ||
         e.title.toLowerCase().includes(query) ||
