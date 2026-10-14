@@ -34,7 +34,7 @@ AttentionFlow 是一款面向 [LINUX DO 社区](https://linux.do) 的开源 Chro
 
 ### 使用已构建的扩展
 
-1. 在 [Releases](https://github.com/wanxiao2018/attentionflow/releases/latest) 的 Assets 中下载 `attentionflow-0.1.2-chrome.zip`（不要下载 Source code，那是未构建的源码，无法直接安装）。解压后将文件夹放在固定位置；其中应直接包含 `manifest.json`。直接把 zip 拖进扩展页面不能安装。
+1. 在 [Releases](https://github.com/itsdangding/attentionflow/releases/latest) 的 Assets 中下载 `attentionflow-0.1.2-chrome.zip`（不要下载 Source code，那是未构建的源码，无法直接安装）。解压后将文件夹放在固定位置；其中应直接包含 `manifest.json`。直接把 zip 拖进扩展页面不能安装。
 2. Chrome 地址栏打开 `chrome://extensions`，开启右上角「开发者模式」。
 3. 点击「加载已解压的扩展程序」，选择解压后的文件夹。
 4. 刷新已打开的 Linux DO 页面，开始正常浏览。
@@ -47,7 +47,7 @@ AttentionFlow 是一款面向 [LINUX DO 社区](https://linux.do) 的开源 Chro
 需要 Node.js 22.12+ 和 npm。
 
 ```sh
-git clone https://github.com/wanxiao2018/attentionflow.git
+git clone https://github.com/itsdangding/attentionflow.git
 cd attentionflow
 npm ci
 npm run build
@@ -105,7 +105,7 @@ npm run build
 
 ## 社区与反馈
 
-欢迎在 [LINUX DO 社区](https://linux.do) 交流使用体验，或在 [GitHub Issues](https://github.com/wanxiao2018/attentionflow/issues) 报告问题、提出建议。提交问题时请附上 Chrome 版本、扩展版本和复现步骤，并注意保护个人浏览历史。
+欢迎在 [LINUX DO 社区](https://linux.do) 交流使用体验，或在 [GitHub Issues](https://github.com/itsdangding/attentionflow/issues) 报告问题、提出建议。提交问题时请附上 Chrome 版本、扩展版本和复现步骤，并注意保护个人浏览历史。
 
 ## 许可证
 
