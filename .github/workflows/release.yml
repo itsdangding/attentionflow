@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [package.json, .github/workflows/release.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore: release v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run zip
+      - name: Verify package and prepare release notes
+        run: |
+          python3 - <<'PY'
+          import json, os, zipfile
+          from pathlib import Path
+          version = json.loads(Path('package.json').read_text())['version']
+          archive = f'.output/attentionflow-{version}-chrome.zip'
+          with zipfile.ZipFile(archive) as z:
+              assert z.testzip() is None
+              assert json.loads(z.read('manifest.json'))['version'] == version
+          changelog = Path('CHANGELOG.md').read_text()
+          section = changelog.split(f'## {version} - ', 1)[1].split('\n', 1)[1].split('\n## ', 1)[0].strip()
+          notes = section + f'\n\n### 安装\n\n下载 Assets 中的 `attentionflow-{version}-chrome.zip`，解压后在 `chrome://extensions` 开启开发者模式，点击「加载已解压的扩展程序」，选择直接包含 `manifest.json` 的文件夹。不要下载 Source code。\n\n升级时保留原扩展目录路径，用新版文件替换后点击「重新加载」，再刷新 Linux DO 页面。建议升级前在 Settings 导出备份。\n'
+          Path('release-notes.md').write_text(notes)
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write(f'RELEASE_VERSION={version}\nRELEASE_ARCHIVE={archive}\n')
+          PY
+      - name: Publish release with installable ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag="v${RELEASE_VERSION}"
+          if gh release view "$tag" --json isDraft --jq .isDraft > release-state.txt 2>/dev/null; then
+            if [ "$(cat release-state.txt)" != true ]; then
+              echo "Release $tag is already published; leaving it unchanged."
+              exit 0
+            fi
+            gh release upload "$tag" "$RELEASE_ARCHIVE" --clobber
+          else
+            gh release create "$tag" "$RELEASE_ARCHIVE" --target "$GITHUB_SHA" --title "$tag Alpha" --notes-file release-notes.md --draft
+          fi
+          gh release edit "$tag" --draft=false --latest --notes-file release-notes.md
