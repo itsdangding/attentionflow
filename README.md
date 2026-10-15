@@ -2,7 +2,7 @@
 
 # AttentionFlow
 
-**回顾你在 Linux DO 的浏览、停留与阅读，让注意力有迹可循。**
+**看看这一周，什么真正拿走了你的注意力。**
 
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://www.google.com/chrome/)
 [![Version](https://img.shields.io/badge/Version-0.1.2%20Alpha-709266?style=for-the-badge)](./CHANGELOG.md)
@@ -15,12 +15,26 @@
 
 ---
 
-AttentionFlow 是一款面向 [LINUX DO 社区](https://linux.do) 的开源 Chrome 扩展。它记录哪些帖子进入过视野，哪些让你停留，哪些被点击，以及你实际花了多久阅读，并在统计面板中呈现你的注意力流。
+AttentionFlow 是一款面向 [LINUX DO 社区](https://linux.do) 的开源 Chrome 扩展。它记录哪些帖子从你眼前经过，哪些让你停下来，哪些最终被点击和认真阅读，然后把这些行为重新还原成一条注意力轨迹。
 
 所有浏览记录保存在当前浏览器中，无需注册账号。当前版本为 **v0.1.2 Alpha**。
 
+## 一周之后，你会得到什么
+
+普通的浏览历史只告诉你“打开过什么”。AttentionFlow 更想回答另一件事：**这么多帖子从眼前经过，最后到底是什么抓住了你？**
+
+最近 7 天的数据可以生成一张 **Weekly Attention Receipt**，把有效浏览时间、经过 / 注意 / 点击 / 阅读 / 深度阅读数量，以及“有多少内容从眼前经过但没有被点开”浓缩成一张分享卡。
+
+- 一键导出 PNG，适合直接发到 Linux DO 或社交平台；
+- 一键复制纯文本周报；
+- 默认隐藏帖子标题，避免把私人浏览内容带进分享卡；
+- 如你主动勾选，可以加入本周最吸引你的帖子。
+
+这个功能首先是一个增长实验：让 AttentionFlow 的结果不仅“自己能看”，也能够成为别人一眼看懂的产品入口。
+
 ## 功能
 
+- **Weekly Attention Receipt**：把最近 7 天的注意力数据生成可分享 PNG / 文本周报，默认隐藏帖子标题。
 - **浏览概览**：查看今天和最近七天的有效浏览时间、帖子数量与变化趋势。
 - **注意力漏斗**：从经过、看见、停留到点击、阅读和深度阅读，按帖子去重统计。
 - **阅读排行**：查看阅读时间最长的帖子、访问次数和楼层深度。
@@ -57,7 +71,7 @@ npm run build
 
 ## 使用与统计规则
 
-打开论坛正常浏览即可自动记录。Dashboard 提供 **Today**、**Last 7 Days** 和 **Settings** 三个页面。
+打开论坛正常浏览即可自动记录。Dashboard 提供 **Today**、**Last 7 Days** 和 **Settings** 三个页面，并提供独立的 **Weekly Receipt** 分享入口。
 
 | 阶段 | 含义 |
 | --- | --- |
@@ -86,6 +100,8 @@ npm run build
 
 扩展不上传浏览记录，不接入广告或分析服务。浏览记录、帖子标题、分类、标签和调试记录保存在本地扩展存储中。
 
+Weekly Attention Receipt 同样完全在本地生成。分享卡默认只包含聚合统计，不包含帖子标题；只有你主动开启选项时，才会把 Top Attention 的帖子标题绘制到导出的图片或分享文本中。
+
 为了计算楼层深度，扩展会向当前 Linux DO 站点请求对应帖子 JSON，仅保存总楼层数，不持久化响应正文。用户主页、通知页面和识别到的私信页面不参与采集。
 
 导出的 JSON 可能包含个人浏览历史，请妥善保管，不要提交到公开仓库。
@@ -106,6 +122,8 @@ npm run build
 ## 社区与反馈
 
 欢迎在 [LINUX DO 社区](https://linux.do) 交流使用体验，或在 [GitHub Issues](https://github.com/itsdangding/attentionflow/issues) 报告问题、提出建议。提交问题时请附上 Chrome 版本、扩展版本和复现步骤，并注意保护个人浏览历史。
+
+如果你愿意分享 Weekly Attention Receipt，我们尤其想知道：**别人看到这张卡之后，会不会主动问“这是什么？”** 这比继续增加功能更能帮助我们判断产品有没有自然传播能力。
 
 ## 许可证
 
