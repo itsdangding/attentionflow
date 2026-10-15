@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { defaults, type Settings } from "../../shared/config";
 import { sendMessage } from "../../shared/runtime";
 import type { Snapshot } from "../../shared/types";
@@ -26,8 +26,12 @@ const compactTime = (ms: number) => {
 const pct = (value: number, total: number) =>
   total > 0 ? Math.round((value / total) * 1000) / 10 : 0;
 
-const shortTitle = (value: string, length = 42) =>
-  value.length > length ? `${value.slice(0, length - 1)}…` : value;
+function fitTitle(ctx: CanvasRenderingContext2D, value: string, maxWidth: number) {
+  if (ctx.measureText(value).width <= maxWidth) return value;
+  const chars = Array.from(value);
+  while (chars.length && ctx.measureText(`${chars.join("")}…`).width > maxWidth) chars.pop();
+  return `${chars.join("")}…`;
+}
 
 function roundedRect(
   ctx: CanvasRenderingContext2D,
@@ -72,7 +76,11 @@ export default function WeeklyReceipt() {
   const [notice, setNotice] = useState("");
   const [rangeLabel, setRangeLabel] = useState("");
 
+  const requestId = useRef(0);
+
   async function load() {
+    const id = ++requestId.current;
+    setSummary(null);
     setLoading(true);
     setNotice("");
     try {
@@ -83,6 +91,7 @@ export default function WeeklyReceipt() {
         sendMessage({ type: "range", start, end }),
         sendMessage({ type: "settings" }) as Promise<Settings>,
       ]);
+      if (id !== requestId.current) return;
       setSummary(summarize(snapshot ?? empty, start, end, settings.model ?? defaults.model));
       const first = new Date(start).toLocaleDateString("zh-CN", {
         month: "numeric",
@@ -94,14 +103,19 @@ export default function WeeklyReceipt() {
       });
       setRangeLabel(`${first} – ${last}`);
     } catch (error) {
+      if (id !== requestId.current) return;
       setNotice(`生成失败：${error instanceof Error ? error.message : String(error)}`);
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   }
 
   useEffect(() => {
-    if (open && !summary && !loading) void load();
+    if (open) {
+      setIncludeTopTopic(false);
+      void load();
+    }
+    return () => { requestId.current++; };
   }, [open]);
 
   const shareText = useMemo(() => {
@@ -112,7 +126,7 @@ export default function WeeklyReceipt() {
     const lines = [
       "我的 Linux DO 一周注意力账单",
       `${rangeLabel} · 有效浏览 ${compactTime(summary.activeMs)}`,
-      `经过 ${passed} · 注意到 ${summary.funnel[2] ?? 0} · 点击 ${clicked} · 阅读 ${summary.readCount} · 深度阅读 ${summary.deepCount}`,
+      `经过 ${passed} · Seen ${summary.funnel[1] ?? 0} · 注意到 ${summary.funnel[2] ?? 0} · 点击 ${clicked} · 阅读 ${summary.readCount} · 深度阅读 ${summary.deepCount}`,
       passed > 0 ? `有 ${ignored}% 的帖子从眼前经过，但我没有点开。` : "这周还没有足够的浏览数据。",
     ];
     if (includeTopTopic && summary.top[0]) {
@@ -207,7 +221,7 @@ export default function WeeklyReceipt() {
       ctx.fillText("TOP ATTENTION", 70, 1115);
       ctx.fillStyle = "#26352d";
       ctx.font = "600 27px Inter, Arial, sans-serif";
-      ctx.fillText(shortTitle(summary.top[0].title, 52), 70, 1162);
+      ctx.fillText(fitTitle(ctx, summary.top[0].title, 940), 70, 1162);
       ctx.fillStyle = "#7f8b80";
       ctx.font = "400 19px Inter, Arial, sans-serif";
       ctx.fillText(`${compactTime(summary.top[0].ms)} · ${summary.top[0].visits} visits`, 70, 1200);
@@ -313,7 +327,10 @@ export default function WeeklyReceipt() {
                 </div>
               </>
             ) : (
-              <div className="receipt-loading">{notice || "暂时无法生成周报。"}</div>
+              <div className="receipt-loading">
+                <span>{notice || "暂时无法生成周报。"}</span>
+                <button onClick={() => void load()}>重新统计</button>
+              </div>
             )}
             {notice && summary && <div className="receipt-notice">{notice}</div>}
           </div>
